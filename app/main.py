@@ -17,7 +17,6 @@ from app.services import reconcile as reconcile_svc
 from app.services import settings as settings_svc
 from app.services import rule_pack as rule_pack_svc
 from app.services import rule_pack_cutover as rule_pack_cutover_svc
-from app.services import rule_pack_dualwrite as rule_pack_dual_svc
 from app.services import sites as sites_svc
 from app.services import visits as visits_svc
 from app.services.errors import ServiceError
@@ -458,12 +457,6 @@ class Api:
 
     @cherrypy.expose
     @_wrap
-    def rule_pack_half(self):
-        _require()
-        return _json(rule_pack_svc.reconcile_display())
-
-    @cherrypy.expose
-    @_wrap
     def rule_pack_snap(self):
         _require()
         return _json(rule_pack_svc.snapshot())
@@ -479,13 +472,6 @@ class Api:
                 str(body.get("note") or "规则包钉定"),
             )
         )
-
-    @cherrypy.expose
-    @_wrap
-    def rule_pack_dual(self):
-        _require()
-        body = _read_json()
-        return _json(rule_pack_dual_svc.apply_dualwrite(str(body.get("note") or "规则包钉定")))
 
     @cherrypy.expose
     @_wrap
@@ -577,14 +563,10 @@ class ApiMount:
                 return api.rule_pack_dash()
             if action == "commit":
                 return api.rule_pack_commit()
-            if action == "half":
-                return api.rule_pack_half()
             if action == "snap":
                 return api.rule_pack_snap()
             if action == "cutover":
                 return api.rule_pack_cutover()
-            if action == "dual":
-                return api.rule_pack_dual()
             return _json({"error": "未知规则包钉定路由"}, 404)
 
         return _json({"error": f"未知接口 {path}"}, 404)

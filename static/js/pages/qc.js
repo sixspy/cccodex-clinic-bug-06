@@ -1,17 +1,20 @@
-import { api, chip, escapeHtml } from '../api.js';
+import { api, chip, escapeHtml, rulePackChipHtml, rulePackDash } from '../api.js';
 
 export async function renderQc(el) {
-  const [findings, batches] = await Promise.all([
+  const [findings, batches, rp] = await Promise.all([
     api('/api/findings'),
     api('/api/batches'),
+    rulePackDash(),
   ]);
   const summary = findings.summary || {};
   const openBatches = (batches.items || []).filter((b) => b.status !== '已关闭');
+  const rpBlocked = !rp.aligned;
 
   el.innerHTML = `
     <div class="card">
-      <h2><span class="chip" data-thick="rule_pack">规则包已亮</span> 字段质控发现</h2>
+      <h2>${rulePackChipHtml(rp)} 字段质控发现</h2>
       <p class="muted">对缺口质量行扫描生成发现；缺字段/编码空/重复键会带严重度。关闭发现不自动改质量，补采成功后会联动关闭。</p>
+      ${rpBlocked ? '<p class="err">规则包未钉定对齐（徽标与包版本号对不上），旧包扫描已挡。请到「台参数」落台提交规则包。</p>' : ''}
       <div class="grid">
         <div class="stat"><div class="n">${summary.open || 0}</div><div class="l">开放发现</div></div>
         <div class="stat"><div class="n">${summary.closed || 0}</div><div class="l">已关闭</div></div>
@@ -22,8 +25,8 @@ export async function renderQc(el) {
         <select id="scanBatch">
           ${openBatches.map((b) => `<option value="${b.id}">${escapeHtml(b.batch_code + ' · ' + b.site_name)}</option>`).join('')}
         </select>
-        <button id="scanOne">扫描选中批次</button>
-        <button id="scanAll" class="warn">扫描全部开放批次</button>
+        <button id="scanOne" ${rpBlocked ? 'disabled' : ''}>扫描选中批次</button>
+        <button id="scanAll" class="warn" ${rpBlocked ? 'disabled' : ''}>扫描全部开放批次</button>
         <select id="statusFilter">
           <option value="开放">仅开放</option>
           <option value="">全部状态</option>

@@ -33,3 +33,18 @@ export function escapeHtml(s) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
 }
+
+export async function rulePackDash() {
+  try {
+    return await api('/api/rule_pack/dash');
+  } catch (e) {
+    return { aligned: false, chip: '包版本旧', version: '' };
+  }
+}
+
+export function rulePackChipHtml(d) {
+  const ok = !!(d && d.aligned);
+  const text = ok ? '规则包已亮' : '包版本旧';
+  const ver = (d && d.version) || '无';
+  return `<span class="chip ${ok ? 'ok' : 'bad'}" data-thick="rule_pack" title="包版本号 ${escapeHtml(ver)}">${text}</span>`;
+}

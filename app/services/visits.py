@@ -276,9 +276,9 @@ def mock_crawl(
     mix_bad: bool = True,
     db_path: str | None = None,
 ) -> dict:
-    from app.services.rule_pack import commit_action, gate_allows_pipeline
-    commit_action({"batch_id": batch_id, "count": count}, db_path)
-    _ = gate_allows_pipeline(db_path)
+    from app.services.rule_pack import require_pack_or_raise
+
+    require_pack_or_raise(db_path)
     count = max(1, min(30, int(count or 5)))
     created = []
     with get_db(db_path) as conn:

@@ -1,11 +1,13 @@
-import { api, chip, escapeHtml } from '../api.js';
+import { api, chip, escapeHtml, rulePackChipHtml, rulePackDash } from '../api.js';
 
 export async function renderVisits(el) {
-  const [batches, sites, protocols] = await Promise.all([
+  const [batches, sites, protocols, rp] = await Promise.all([
     api('/api/batches'),
     api('/api/sites'),
     api('/api/protocols?status=' + encodeURIComponent('生效')),
+    rulePackDash(),
   ]);
+  const rpBlocked = !rp.aligned;
   const siteOpts = (sites.items || [])
     .filter((s) => s.status !== '停用')
     .map((s) => `<option value="${s.id}">${escapeHtml(s.site_code + ' · ' + s.name)}</option>`)
@@ -16,8 +18,9 @@ export async function renderVisits(el) {
 
   el.innerHTML = `
     <div class="card">
-      <h2><span class="chip" data-thick="rule_pack">规则包已亮</span> 访视清单抓取批次</h2>
+      <h2>${rulePackChipHtml(rp)} 访视清单抓取批次</h2>
       <p class="muted">按试验中心开批次，模拟抓取访视行，合格行可入库，缺口行进入质控与补采。</p>
+      ${rpBlocked ? '<p class="err">规则包未钉定对齐，旧包扫描（模拟抓取）已挡。请到「台参数」落台提交规则包。</p>' : ''}
       <div class="row">
         <select id="siteId">${siteOpts}</select>
         <select id="protocolId"><option value="">默认生效方案</option>${protoOpts}</select>
@@ -64,7 +67,7 @@ export async function renderVisits(el) {
         <td class="muted">${escapeHtml(b.note || '')}</td>
         <td class="row">
           <button data-view="${b.id}" class="ghost">查看</button>
-          <button data-crawl="${b.id}">模拟抓取</button>
+          <button data-crawl="${b.id}" ${rpBlocked ? 'disabled' : ''}>模拟抓取</button>
           <button data-ingest="${b.id}">合格入库</button>
           <button data-complete="${b.id}" class="warn">标已收齐</button>
           <button data-close="${b.id}" class="danger">关闭</button>

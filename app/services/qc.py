@@ -110,6 +110,9 @@ def _field_hints(quality: str, payload: str, required: list[str]) -> list[tuple[
 
 
 def scan_batch(batch_id: int, db_path: str | None = None) -> dict:
+    from app.services.rule_pack import require_pack_or_raise
+
+    require_pack_or_raise(db_path)
     created = []
     with get_db(db_path) as conn:
         batch = conn.execute(

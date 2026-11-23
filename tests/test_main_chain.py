@@ -1,7 +1,8 @@
-from app.services import backfill, qc, reconcile, visits
+from app.services import backfill, qc, reconcile, rule_pack, visits
 
 
 def test_qc_backfill_reconcile_chain(db_path):
+    rule_pack.commit_action({"note": "主链钉定"}, db_path=db_path)
     batches = visits.list_batches(db_path)
     batch = next(b for b in batches if b["status"] == "采集中")
     scanned = qc.scan_batch(batch["id"], db_path=db_path)
@@ -30,6 +31,7 @@ def test_qc_backfill_reconcile_chain(db_path):
 
 
 def test_mock_crawl_and_ingest(db_path):
+    rule_pack.commit_action({"note": "抓取钉定"}, db_path=db_path)
     batches = visits.list_batches(db_path)
     batch = next(b for b in batches if b["status"] == "采集中")
     before = visits.get_batch(batch["id"], db_path)["item_count"]

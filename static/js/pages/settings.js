@@ -65,36 +65,45 @@ export async function renderSettings(el) {
 
   try {
     const dash = await api('/api/rule_pack/dash');
-    el.innerHTML += `<div class="card" style="margin-top:1rem">
-      <h3>规则包钉定</h3>
-      <span class="chip">${dash.chip}</span>
-      <p class="muted">读轨 ${dash.active_read} · 切流指纹 ${dash.cutover_fp || '空'} · 拒回刷 ${dash.reject_refresh} · 归档 ${dash.archive_count} · 新旗 ${dash.live_flag || '空'} · 对齐差 ${dash.panel_pack_mismatch}</p>
-      <div class="row">
-        <button id="go_rule_pack" type="button">落台</button>
-        <button id="half_rule_pack" type="button">半修对齐</button>
-        <button id="cut_rule_pack" type="button">切流账册</button>
-        <button id="dual_rule_pack" type="button">双写两轨</button>
+    const chipCls = dash.aligned ? 'ok' : 'bad';
+    el.insertAdjacentHTML('beforeend', `<div class="card" style="margin-top:1rem">
+      <h3>规则包钉定 <span class="chip ${chipCls}" data-thick="rule_pack">${escapeHtml(dash.chip)}</span></h3>
+      <div class="grid">
+        <div class="stat"><div class="n">${escapeHtml(dash.version || '无')}</div><div class="l">包版本号</div></div>
+        <div class="stat"><div class="n">${dash.pack_count}</div><div class="l">落点行</div></div>
+        <div class="stat"><div class="n">${dash.aligned ? '对齐' : '未对齐'}</div><div class="l">读轨口径</div></div>
       </div>
-    </div>`;
+      <p class="muted">读轨 ${escapeHtml(dash.active_read)} · 切流指纹 ${escapeHtml(dash.cutover_fp || '空')} · 拒回刷 ${dash.reject_refresh} · 真值 ${escapeHtml(dash.truth)} · 徽标拧花 ${dash.panel_pack_mismatch}</p>
+      <div class="row">
+        <button id="go_rule_pack" type="button">落台提交</button>
+        <button id="cut_rule_pack" type="button">切流账册钉定</button>
+      </div>
+      <div id="rpMsg" class="muted" style="margin-top:8px"></div>
+    </div>`);
+    const rpMsg = el.querySelector('#rpMsg');
     const go = el.querySelector('#go_rule_pack');
     if (go) go.onclick = async () => {
-      await api('/api/rule_pack/commit', { method:'POST', body: JSON.stringify({ref:1}) });
-      await renderSettings(el);
-    };
-    const half = el.querySelector('#half_rule_pack');
-    if (half) half.onclick = async () => {
-      await api('/api/rule_pack/half', { method:'POST', body:'{}' });
-      await renderSettings(el);
+      try {
+        const r = await api('/api/rule_pack/commit', { method: 'POST', body: JSON.stringify({ note: '台参数落台' }) });
+        rpMsg.className = 'muted';
+        rpMsg.textContent = r.message || '已落台';
+        await renderSettings(el);
+      } catch (e) {
+        rpMsg.className = 'err';
+        rpMsg.textContent = e.message;
+      }
     };
     const cut = el.querySelector('#cut_rule_pack');
     if (cut) cut.onclick = async () => {
-      await api('/api/rule_pack/cutover', { method:'POST', body: JSON.stringify({ref_id:1, note:'规则包'}) });
-      await renderSettings(el);
-    };
-    const dual = el.querySelector('#dual_rule_pack');
-    if (dual) dual.onclick = async () => {
-      await api('/api/rule_pack/dual', { method:'POST', body: JSON.stringify({note:'规则包'}) });
-      await renderSettings(el);
+      try {
+        const r = await api('/api/rule_pack/cutover', { method: 'POST', body: JSON.stringify({ ref_id: 1, note: '规则包钉定入账' }) });
+        rpMsg.className = 'muted';
+        rpMsg.textContent = `账册已钉 ${r.version} 指纹 ${r.cutover_fp}`;
+        await renderSettings(el);
+      } catch (e) {
+        rpMsg.className = 'err';
+        rpMsg.textContent = e.message;
+      }
     };
   } catch (e) { /* optional surface */ }
 
